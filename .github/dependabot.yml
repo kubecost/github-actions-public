@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  # GitHub Actions: every `uses:` is `@<sha>  # vX.Y.Z`, the format Dependabot rewrites, comment included.
+  # Runtime image pins in */action.yaml are not visible to Dependabot; update-image-pins.yml handles them.
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /kc-pr-agent
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore(ci)
+
+  # Hook revisions in .pre-commit-config.yaml. The `local` repo has no upstream and is left alone.
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: chore(pre-commit)

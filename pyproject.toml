@@ -1,0 +1,11 @@
+# Tooling configuration only. This repository publishes GitHub Actions, not a Python package.
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle
+  "F",  # Pyflakes
+  "B",  # flake8-bugbear
+  "I",  # isort
+]

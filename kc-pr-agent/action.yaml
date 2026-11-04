@@ -1,0 +1,72 @@
+name: 'The PR Agent'
+description: 'Summarize, review and suggest improvements for pull requests'
+branding:
+  icon: 'award'
+  color: 'green'
+inputs:
+  artifact_path:
+    description: 'Path to a CI artifact file (relative to GITHUB_WORKSPACE or absolute) to include as extra context in PR analysis. Leave empty to disable artifact injection.'
+    required: false
+    default: ''
+  artifact_instructions:
+    description: 'Custom instructions telling the AI how to interpret the artifact. Leave empty for a sensible default.'
+    required: false
+    default: ''
+  workflow-summary-show-detailed-output:
+    description: 'Append the output of each tool (describe, review, improve) to the workflow job summary.'
+    required: false
+    default: 'true'
+  workflow-summary-show-cost:
+    description: 'Append estimated AI usage and cost to the bottom of the workflow job summary.'
+    required: false
+    default: 'true'
+outputs:
+  agent-version:
+    description: 'Actual PR-Agent runtime version, available once the container starts.'
+    value: ${{ steps.pragent.outputs.agent-version }}
+runs:
+  using: 'composite'
+  steps:
+    # Authenticated pulls from ECR Public avoid the anonymous "Data limit exceeded" error. This reads the AWS
+    # credentials an earlier step (aws-actions/configure-aws-credentials) exported; the role needs
+    # ecr-public:GetAuthorizationToken and sts:GetServiceBearerToken. Without credentials the login fails and
+    # the pull below falls back to anonymous.
+    - name: Log in to ECR Public
+      continue-on-error: true
+      uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+      with:
+        registry-type: public
+
+    # Runs the image the way a Docker action would: the workspace and runner temp directory are mounted at
+    # their host paths, so GITHUB_EVENT_PATH, GITHUB_OUTPUT and GITHUB_STEP_SUMMARY resolve unchanged, and
+    # the step environment is forwarded by name so no value reaches the command line.
+    # Pin this wrapper with an action commit SHA. PR_AGENT_IMAGE is pinned by tag and digest and is bumped
+    # by scripts/update_image_pins.py; keep it on one line in the form <image>:<tag>@sha256:<digest>.
+    # See SECURITY.md in the repository root.
+    - name: Run PR Agent
+      id: pragent
+      shell: python3 {0}
+      env:
+        PR_AGENT_IMAGE: public.ecr.aws/u8u5i0e2/kc-pr-agent:v0.47.18@sha256:18b42ab5cacbc95f7237832cb69038073678a9e5d296b3093e218e77fc2905cc
+        ARTIFACT_PATH: ${{ inputs.artifact_path }}
+        ARTIFACT_INSTRUCTIONS: ${{ inputs.artifact_instructions }}
+        GITHUB_ACTION_CONFIG__WORKFLOW_SUMMARY_SHOW_DETAILED_OUTPUT: ${{ inputs.workflow-summary-show-detailed-output }}
+        GITHUB_ACTION_CONFIG__WORKFLOW_SUMMARY_SHOW_COST: ${{ inputs.workflow-summary-show-cost }}
+      run: |
+        import os
+        import subprocess
+        import sys
+
+        # Host-specific values that would break the container.
+        skip = {
+            "PATH", "HOME", "PWD", "OLDPWD", "SHLVL", "_", "HOSTNAME", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH",
+            "pythonLocation", "PR_AGENT_IMAGE",
+        }
+        workspace = os.environ["GITHUB_WORKSPACE"]
+        temp = os.environ["RUNNER_TEMP"]
+        cmd = ["docker", "run", "--rm", "--workdir", workspace, "-v", f"{workspace}:{workspace}", "-v", f"{temp}:{temp}"]
+        for name in sorted(os.environ):
+            if name not in skip and not (name.startswith("Python") and name.endswith("_ROOT_DIR")):
+                cmd += ["-e", name]
+        cmd.append(os.environ["PR_AGENT_IMAGE"])
+        sys.exit(subprocess.call(cmd))

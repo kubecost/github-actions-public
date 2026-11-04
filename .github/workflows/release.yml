@@ -1,0 +1,54 @@
+# Releases one action. Creates the tag `<action>/v<version>`, a GitHub Release, and moves the floating major tag
+# `<action>/v<major>`. Consumers should pin the commit SHA and put the tag in a comment:
+#   uses: kubecost/github-actions-public/<action>@<sha> # <action>/v1.2.3
+# Run from main with the Actions tab: choose the action folder and a semantic version.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Action folder to release (for example kc-pr-agent)
+        required: true
+        type: string
+      version:
+        description: Semantic version without the v prefix (for example 1.0.0)
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      ACTION: ${{ inputs.action }}
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
+      - name: Validate inputs
+        run: |
+          [[ "$ACTION" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "::error::Invalid action name"; exit 1; }
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Version must look like 1.2.3"; exit 1; }
+          [ -f "$ACTION/action.yaml" ] || { echo "::error::$ACTION/action.yaml not found"; exit 1; }
+          if git ls-remote --exit-code --tags origin "refs/tags/$ACTION/v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag $ACTION/v$VERSION already exists"; exit 1
+          fi
+      - name: Validate actions
+        run: ./scripts/check_actions.py
+      - name: Tag and release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          major="${VERSION%%.*}"
+          git tag "$ACTION/v$VERSION"
+          git tag -f "$ACTION/v$major"
+          git push origin "refs/tags/$ACTION/v$VERSION"
+          git push --force origin "refs/tags/$ACTION/v$major"
+          gh release create "$ACTION/v$VERSION" --title "$ACTION v$VERSION" --generate-notes --verify-tag
