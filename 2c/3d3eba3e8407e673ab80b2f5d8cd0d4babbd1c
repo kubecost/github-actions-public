@@ -1,0 +1,57 @@
+AGENTS.md
+  s_65f7d6d14e2a2a::t_e4fc0e3002ae3e 1-88
+.github/CODEOWNERS
+  s_65f7d6d14e2a2a::t_dd021d3eae822e 1-2
+.github/dependabot.yml
+  s_65f7d6d14e2a2a::t_0605651afe4d3a 1-33
+.github/pull_request_template.md
+  s_65f7d6d14e2a2a::t_f57a5f68a84db0 1-8
+.github/workflows/ci.yml
+  s_65f7d6d14e2a2a::t_3e04d711e8864e 1-38
+.github/workflows/release.yml
+  s_65f7d6d14e2a2a::t_b675225f30e375 1-54
+.github/workflows/update-image-pins.yml
+  s_65f7d6d14e2a2a::t_24445a24b2ebd5 1-43
+.gitignore
+  s_65f7d6d14e2a2a::t_3461c9d1a14c99 1-10
+.pre-commit-config.yaml
+  s_65f7d6d14e2a2a::t_a75e8665e41e2f 1-39
+CONTRIBUTING.md
+  s_65f7d6d14e2a2a::t_260f36c21d1cdd 1-8
+LICENSE
+  s_65f7d6d14e2a2a::t_d5014da79316cb 1-21
+README.md
+  s_65f7d6d14e2a2a::t_c1dc7abd5166d1 1-23
+SECURITY.md
+  s_65f7d6d14e2a2a::t_8923708613173d 1-23
+justfile
+  s_65f7d6d14e2a2a::t_d4a729a27e70d1 1-20
+kc-pr-agent/README.md
+  s_65f7d6d14e2a2a::t_2566ebe45c9217 1-67
+kc-pr-agent/action.yaml
+  s_65f7d6d14e2a2a::t_3f7efbaa9c73aa 1-72
+kc-pr-agent/examples/pr-agent.yml
+  s_65f7d6d14e2a2a::t_0c80f9a3e73a7f 1-63
+pyproject.toml
+  s_65f7d6d14e2a2a::t_b84fdf95d32424 1-11
+scripts/check_actions.py
+  s_65f7d6d14e2a2a::t_041ad93308c440 1-69
+scripts/update_image_pins.py
+  s_65f7d6d14e2a2a::t_29ba3054781468 1-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2c3d3eba3e8407e673ab80b2f5d8cd0d4babbd1c",
+  "prompts": {},
+  "sessions": {
+    "s_65f7d6d14e2a2a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f7c96ca-e1e0-4753-ab94-dae1e3729659",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "jesse goodier <31039225+jessegoodier@users.noreply.github.com>"
+    }
+  }
+}
