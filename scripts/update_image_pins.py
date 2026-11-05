@@ -47,9 +47,7 @@ ACCEPT = (
 
 
 def _token(repository: str) -> str:
-    query = urllib.parse.urlencode(
-        {"service": REGISTRY, "scope": f"repository:{repository}:pull", "t": time.time_ns()}
-    )
+    query = urllib.parse.urlencode({"service": REGISTRY, "scope": f"repository:{repository}:pull", "t": time.time_ns()})
     with urllib.request.urlopen(f"https://{REGISTRY}/token/?{query}", timeout=30) as response:
         return json.load(response)["token"]
 

@@ -31,6 +31,11 @@ repos:
         entry: uvx ruff@0.17.2 check --fix --show-fixes
         language: system
         types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uvx ruff@0.17.2 format
+        language: system
+        types_or: [python, pyi]
       - id: check-actions
         name: validate actions
         entry: scripts/check_actions.py
