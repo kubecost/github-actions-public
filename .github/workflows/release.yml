@@ -1,7 +1,8 @@
 # Releases one action. Creates the tag `<action>/v<version>`, a GitHub Release, and moves the floating major tag
 # `<action>/v<major>`. Consumers should pin the commit SHA and put the tag in a comment:
 #   uses: kubecost/github-actions-public/<action>@<sha> # <action>/v1.2.3
-# Run from main with the Actions tab: choose the action folder and a semantic version.
+# Run from main with the Actions tab: choose the action folder and a semantic version. The version must be higher
+# than every existing release of that action, so the floating major tag only ever moves forward.
 name: release
 
 on:
@@ -18,9 +19,13 @@ on:
 
 permissions: {}
 
+# One release at a time, and never cancel one halfway through tagging.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -34,12 +39,23 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
       - name: Validate inputs
         run: |
+          [ "$GITHUB_REF" = "refs/heads/main" ] || { echo "::error::Run this workflow from main"; exit 1; }
           [[ "$ACTION" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "::error::Invalid action name"; exit 1; }
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Version must look like 1.2.3"; exit 1; }
           [ -f "$ACTION/action.yaml" ] || { echo "::error::$ACTION/action.yaml not found"; exit 1; }
-          if git ls-remote --exit-code --tags origin "refs/tags/$ACTION/v$VERSION" >/dev/null 2>&1; then
-            echo "::error::Tag $ACTION/v$VERSION already exists"; exit 1
+          # Highest existing release of this action (the floating vX tags do not match the X.Y.Z pattern).
+          previous=$(git ls-remote --tags --refs origin "refs/tags/$ACTION/v*" \
+            | sed 's|.*refs/tags/||' | grep -E "^$ACTION/v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -n1 || true)
+          if [ -n "$previous" ]; then
+            if [ "$previous" = "$ACTION/v$VERSION" ]; then
+              echo "::error::Tag $previous already exists"; exit 1
+            fi
+            highest=$(printf '%s\n%s\n' "${previous##*/v}" "$VERSION" | sort -V | tail -n1)
+            if [ "$highest" != "$VERSION" ]; then
+              echo "::error::Version $VERSION is not higher than the latest release $previous"; exit 1
+            fi
           fi
+          echo "PREVIOUS_TAG=$previous" >> "$GITHUB_ENV"
       - name: Validate actions
         run: ./scripts/check_actions.py
       - name: Tag and release
@@ -47,8 +63,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           major="${VERSION%%.*}"
-          git tag "$ACTION/v$VERSION"
-          git tag -f "$ACTION/v$major"
-          git push origin "refs/tags/$ACTION/v$VERSION"
-          git push --force origin "refs/tags/$ACTION/v$major"
-          gh release create "$ACTION/v$VERSION" --title "$ACTION v$VERSION" --generate-notes --verify-tag
+          git tag "$ACTION/v$VERSION" "$GITHUB_SHA"
+          git tag -f "$ACTION/v$major" "$GITHUB_SHA"
+          # Atomic: either both tags land or neither does, so a failure cannot leave the floating tag behind.
+          git push --atomic origin "refs/tags/$ACTION/v$VERSION" "+refs/tags/$ACTION/v$major"
+          # Notes cover this action only: start from its previous release, not the repository's latest tag.
+          notes_args=()
+          [ -z "$PREVIOUS_TAG" ] || notes_args=(--notes-start-tag "$PREVIOUS_TAG")
+          gh release create "$ACTION/v$VERSION" --title "$ACTION v$VERSION" --generate-notes "${notes_args[@]}" \
+            --verify-tag
