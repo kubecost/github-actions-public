@@ -1,8 +1,8 @@
 # Repository Guidelines
 
-This is a **public** repository of GitHub Actions maintained by Kubecost. It holds several actions, one per top-level
-folder, and will gain more. Assume everything here, including commit messages, issues and pull-request text, is
-world-readable and will be copied into other organizations' workflows.
+This is a **public** repository of GitHub Actions maintained by Kubecost. It holds one action per top-level folder.
+Assume everything here, including commit messages, issues and pull-request text, is world-readable and will be copied
+into other organizations' workflows.
 
 - Repository: https://github.com/kubecost/github-actions-public
 - Consumers use `kubecost/github-actions-public/<action>@<commit-sha> # <action>/vX.Y.Z`.
