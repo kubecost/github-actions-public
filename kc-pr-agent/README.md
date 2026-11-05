@@ -26,8 +26,12 @@ A complete workflow, with the trust checks a public repository needs, is in
 | --- | --- | --- |
 | `artifact_path` | `''` | CI artifact file (relative to `GITHUB_WORKSPACE` or absolute) added as extra context. |
 | `artifact_instructions` | `''` | How the model should interpret the artifact. |
-| `workflow-summary-show-detailed-output` | `true` | Append each tool's output to the job summary. |
-| `workflow-summary-show-cost` | `true` | Append estimated AI usage and cost to the job summary. |
+| `workflow-summary-show-detailed-output` | `''` (acts as `true`) | Append each tool's output to the job summary. |
+| `workflow-summary-show-cost` | `''` (acts as `true`) | Append estimated AI usage and cost to the job summary. |
+
+A non-empty input wins. When an input is empty, the matching variable in the step's `env` is used
+(`ARTIFACT_PATH`, `ARTIFACT_INSTRUCTIONS`, `GITHUB_ACTION_CONFIG__WORKFLOW_SUMMARY_SHOW_DETAILED_OUTPUT`,
+`GITHUB_ACTION_CONFIG__WORKFLOW_SUMMARY_SHOW_COST`), and if that is unset too the built-in default applies.
 
 ## Outputs
 
@@ -41,8 +45,19 @@ PR-Agent reads its settings from the step's environment, using the names documen
 (<https://docs.pr-agent.ai/>): `CONFIG__MODEL`, `GITHUB_ACTION_CONFIG__AUTO_REVIEW`, provider keys such as
 `OPENAI__KEY`, and so on. A repository `.pr_agent.toml` can override defaults that the workflow does not set.
 
-**Everything in the calling step's `env` is forwarded into the container**, by name, so values never appear on the
-command line. Put only what PR-Agent needs there, and never unrelated secrets.
+Only an allowlist of the calling step's `env` is forwarded into the container, by name, so values never appear on the
+command line:
+
+- `GITHUB_*` (the GitHub context and `GITHUB_TOKEN`), `ARTIFACT_*`, `PR_AGENT_*` and `LOG_LEVEL`
+- Model provider credentials and settings: `AWS_*`, `OPENAI_*`, `AZURE_*`, `ANTHROPIC_*`, `GOOGLE_*` and `VERTEX*`
+- `RUNNER_TEMP`, `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE`
+- PR-Agent settings, which are any upper-case name containing a double underscore (`CONFIG__MODEL`, `OPENAI__KEY`,
+  `PR_REVIEWER__EXTRA_INSTRUCTIONS`)
+
+Anything else is not forwarded. That includes the runner's OIDC variables (`ACTIONS_ID_TOKEN_REQUEST_URL` and
+`ACTIONS_ID_TOKEN_REQUEST_TOKEN`), so granting `id-token: write` does not hand the container the means to mint tokens.
+A secret whose name matches the list above still reaches the container, so put only what PR-Agent needs in `env`, and
+never unrelated secrets.
 
 ## Requirements
 
@@ -54,14 +69,7 @@ command line. Put only what PR-Agent needs there, and never unrelated secrets.
   registry rate limits on busy runners.
 - Job permissions: `contents: read`, `issues: write`, `pull-requests: write`, and `id-token: write` for OIDC.
 
-## Versioning and the image pin
+## Versioning
 
-Releases are tagged `kc-pr-agent/vX.Y.Z`, with a floating `kc-pr-agent/vX` tag that moves with each release. Prefer a
-commit SHA. The runtime image is pinned as `<image>:<tag>@sha256:<digest>` and refreshed weekly by a pull request from
-`update-image-pins.yml`, so a new agent release reaches this action only after that pull request is merged. The digest in
-`action.yaml` is what runs.
-
-## Known gaps
-
-The `workflow-summary-show-metrics` input arrives with the first runtime release that contains the summary metrics
-table; it is added here when the pin advances to that release.
+Releases are tagged `kc-pr-agent/vX.Y.Z`, with a floating `kc-pr-agent/vX` tag. Pin a commit SHA rather than a tag.
+Each release pins its runtime image by tag and digest in `action.yaml`, and that digest is what runs.

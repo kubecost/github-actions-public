@@ -51,7 +51,8 @@ jobs:
 
       - name: PR Agent
         uses: kubecost/github-actions-public/kc-pr-agent@<commit-sha> # kc-pr-agent/v1
-        # Everything in this step's env is forwarded into the container. Keep unrelated secrets out of it.
+        # An allowlist of this step's env is forwarded into the container (see the action README). Keep unrelated
+        # secrets out of it.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_USE_IMDS: "true"
