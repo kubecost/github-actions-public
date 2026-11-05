@@ -1,0 +1,43 @@
+# Keeps each action's runtime image pinned to the latest stable release (tag + digest) and opens a pull request.
+# Dependabot cannot read an image named in an `env` value of a composite action, so scripts/update_image_pins.py does.
+# Needs Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests". Pull requests made
+# with GITHUB_TOKEN do not start other workflows; close and reopen the pull request to run ci.
+name: update-image-pins
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - name: Update image pins
+        run: ./scripts/update_image_pins.py
+      - name: Open a pull request when a pin changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo "Image pins are current."
+            exit 0
+          fi
+          branch="chore/update-image-pins"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git commit -am "chore(deps): update runtime image pins"
+          git push --force origin "$branch"
+          if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --head "$branch" --title "chore(deps): update runtime image pins" \
+              --body "Automated by \`scripts/update_image_pins.py\`. Review the release notes of the new image before merging."
+          fi

@@ -1,0 +1,64 @@
+# Example: AI-assisted describe, review and improve on pull requests with the kc-pr-agent action.
+#
+# Copy to .github/workflows/pr-agent.yml. Replace <commit-sha> with a commit of this repository (see the releases
+# page) and keep the tag in the trailing comment so Dependabot can propose updates.
+#
+# Repository or organization variables used below (placeholders, set your own values):
+#   AWS_ROLE_TO_ASSUME   IAM role trusted for GitHub OIDC, allowed bedrock:InvokeModel, bedrock:GetInferenceProfile,
+#                        bedrock:ListInferenceProfiles, ecr-public:GetAuthorizationToken, sts:GetServiceBearerToken
+#   AWS_REGION           Bedrock region (optional, default us-west-2)
+#   AWS_MODEL_ARN        Bedrock inference profile ARN of the model to use
+#
+# This example is deliberately small. It runs for same-repository pull requests and for slash commands from trusted
+# users only, because a public repository would otherwise let anyone trigger paid model calls.
+name: PR-Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  pr_agent:
+    name: Run PR Agent commands
+    if: >-
+      (github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+      github.event.sender.type != 'Bot' && startsWith(github.event.comment.body, '/') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event_name }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: read
+      id-token: write # AWS OIDC
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+
+      - name: PR Agent
+        uses: kubecost/github-actions-public/kc-pr-agent@<commit-sha> # kc-pr-agent/v1
+        # An allowlist of this step's env is forwarded into the container (see the action README). Keep unrelated
+        # secrets out of it.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AWS_USE_IMDS: "true"
+          AWS_REGION_NAME: ${{ vars.AWS_REGION || 'us-west-2' }}
+          CONFIG__MODEL: ${{ vars.AWS_MODEL_ARN }}
+          CONFIG__FALLBACK_MODELS: ${{ vars.AWS_MODEL_ARN }}
+          GITHUB_ACTION_CONFIG__AUTO_DESCRIBE: "true"
+          GITHUB_ACTION_CONFIG__AUTO_REVIEW: "true"
+          GITHUB_ACTION_CONFIG__AUTO_IMPROVE: "true"
