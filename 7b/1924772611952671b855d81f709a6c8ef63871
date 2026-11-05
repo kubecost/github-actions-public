@@ -1,0 +1,42 @@
+kc-pr-agent/action.yaml
+  s_1d9549d78b9d66::t_c5b3eef9096d5b 16,18,20,22,42,51-54,57,61-62,68,70,75-76,81-83,85,90
+  s_1d9549d78b9d66::t_392b20e50e88bf 63-67,69
+  s_8e38b86ddf2d7a::t_b65571968a5a3d 71-74,77-80,84
+kc-pr-agent/examples/pr-agent.yml
+  s_8e38b86ddf2d7a::t_6f5f030c240ad8 54-55
+kc-pr-agent/README.md
+  s_8e38b86ddf2d7a::t_33e155239e1584 51-53,59-60
+  s_8e38b86ddf2d7a::t_df729d588eea88 72,74-75
+  s_1d9549d78b9d66::t_c6859cff6e7efc 29-34
+  s_1d9549d78b9d66::t_c42f7f64ea15d1 48-49,54-58
+  s_8e38b86ddf2d7a::t_56e518a22d7c87 50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b1924772611952671b855d81f709a6c8ef63871",
+  "prompts": {},
+  "humans": {
+    "h_cca6aa2712613d": {
+      "author": "jesse goodier <31039225+jessegoodier@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_1d9549d78b9d66": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c4107e0-8acc-484a-893d-cf934e608a3e",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "jesse goodier <31039225+jessegoodier@users.noreply.github.com>"
+    },
+    "s_8e38b86ddf2d7a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fbb4b6f6-92b4-4d8c-b233-917dfd84e6ca",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "jesse goodier <31039225+jessegoodier@users.noreply.github.com>"
+    }
+  }
+}
