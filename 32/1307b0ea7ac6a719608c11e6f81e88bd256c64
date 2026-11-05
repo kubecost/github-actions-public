@@ -1,0 +1,24 @@
+.github/workflows/ci.yml
+  h_cca6aa2712613d 26,36
+.github/workflows/release.yml
+  h_cca6aa2712613d 34
+.github/workflows/update-image-pins.yml
+  h_cca6aa2712613d 23
+scripts/check_actions.py
+  h_cca6aa2712613d 5-6
+scripts/update_image_pins.py
+  h_cca6aa2712613d 5
+uv.lock
+  h_cca6aa2712613d 1-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "321307b0ea7ac6a719608c11e6f81e88bd256c64",
+  "prompts": {},
+  "humans": {
+    "h_cca6aa2712613d": {
+      "author": "jesse goodier <31039225+jessegoodier@users.noreply.github.com>"
+    }
+  }
+}
