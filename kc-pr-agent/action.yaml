@@ -47,7 +47,7 @@ runs:
       id: pragent
       shell: python3 {0}
       env:
-        PR_AGENT_IMAGE: public.ecr.aws/u8u5i0e2/kc-pr-agent:v0.47.18@sha256:18b42ab5cacbc95f7237832cb69038073678a9e5d296b3093e218e77fc2905cc
+        PR_AGENT_IMAGE: public.ecr.aws/u8u5i0e2/kc-pr-agent:v0.47.20@sha256:4faacd918c228d0f6f4c2b1494b44d0f51108ac989824ad0dc267c205737a5e7
         INPUT_ARTIFACT_PATH: ${{ inputs.artifact_path }}
         INPUT_ARTIFACT_INSTRUCTIONS: ${{ inputs.artifact_instructions }}
         INPUT_SHOW_DETAILED_OUTPUT: ${{ inputs.workflow-summary-show-detailed-output }}
